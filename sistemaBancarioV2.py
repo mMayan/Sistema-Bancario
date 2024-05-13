@@ -20,13 +20,14 @@ def cadastrar_usuario():
     dict_de_usuarios.update({cpf_user: {"nome": nome_user, "data de nascimento": date_user, 
                                         "endereço": address_user}})
     dict_de_usuarios[cpf_user]["limite saque"] = 3
+    dict_de_usuarios[cpf_user].update({"extrato": {"entrada": [], "saída": []}})
 
 def criar_conta_corrente():
     global dict_de_usuarios, num_conta
 
     cpf_user = str(input("digite o cpf cadastrado do usuário: "))
     if cpf_user not in dict_de_usuarios:
-        print("\n========================================\n"
+        print("========================================\n"
             "usuário não encontrado no banco de dados!\n"
             "=========================================\n")
         return
@@ -37,7 +38,7 @@ def criar_conta_corrente():
     if "conta corrente" not in dict_de_usuarios[cpf_user]:
         dict_de_usuarios[cpf_user].update({"conta corrente": [{"agência": AGENCIA_CONTA, 
                                             "número da conta": num_conta}]})
-        print("\n=======================\n"
+        print("=======================\n"
             "conta corrente criada!\n"
             "=======================\n")
     else:
@@ -56,7 +57,7 @@ def verifica_info_usuario():
     #--developer only--#
     
     elif cpf_user not in dict_de_usuarios:
-        print("\n========================================\n"
+        print("========================================\n"
             "usuário não encontrado no banco de dados!\n"
             "=========================================\n")
         return
@@ -76,12 +77,13 @@ def deposito():
 
     cpf_user = str(input("digite o cpf do titular para realizar o depósito: "))
     if cpf_user not in dict_de_usuarios:
-        print("\n=========================================\n"
+        print("=========================================\n"
             "usuário não encontrado no banco de dados!\n"
             "=========================================\n")
         return
+    
     if "conta corrente" not in dict_de_usuarios[cpf_user]:
-        print("\n========================================\n"
+        print("========================================\n"
             "usuário não possui conta corrente!\n"
             "=========================================\n")
         return
@@ -89,52 +91,71 @@ def deposito():
     if "movimentações" not in dict_de_usuarios[cpf_user]:
         deposito_user = float(input("digite a quantidade para depositar: "))
         if deposito_user <= 0:
-            print("\n========================================\n"
+            print("========================================\n"
             "por favor, digitar apenas valores positivos!\n"
             "=========================================\n")
             return
+        
         dict_de_usuarios[cpf_user].update({"movimentações": deposito_user})
+        dict_de_usuarios[cpf_user]["extrato"]["entrada"].append(deposito_user)
     else:
         deposito_user = float(input("digite a quantidade para depositar novamente: "))
         if deposito_user <= 0:
-            print("\n========================================\n"
+            print("========================================\n"
             "por favor, digitar apenas valores positivos!\n"
             "=========================================\n")
             return
         dict_de_usuarios[cpf_user]["movimentações"] += deposito_user
+        dict_de_usuarios[cpf_user]["extrato"]["entrada"].append(deposito_user)
         
 
 def saque():
     global dict_de_usuarios
     
-    cpf_user = str(input("digite o cpf do titular para realizar o depósito: "))
-    #depois do cpf_user, verificar se a conta do titular ainda tem disponibilidade de saque
+    cpf_user = str(input("digite o cpf do titular para realizar o saque: "))
+    
     if cpf_user not in dict_de_usuarios:
-        print("\n=========================================\n"
+        print("=========================================\n"
             "usuário não encontrado no banco de dados!\n"
             "=========================================\n")
         return
+    
     if "conta corrente" not in dict_de_usuarios[cpf_user]:
-        print("\n========================================\n"
+        print("========================================\n"
             "usuário não possui conta corrente!\n"
             "=========================================\n")
         return
-    #número de saques 3 por dia
+    
+    if "movimentações" not in dict_de_usuarios[cpf_user]:
+        print("===========================================\n"
+              "usuário não realizou nenhum depósito ainda!\n"
+              "===========================================\n")
+        return
+    
+    if dict_de_usuarios[cpf_user]["limite saque"] == 0:
+        print("==========================\n"
+              "limite de saques excedido!\n"
+              "==========================\n")
+        return
+    
     deposito_user = float(input("digite o quanto você quer sacar: "))
+
     if deposito_user <= 0:
-            print("\n========================================\n"
+            print("========================================\n"
             "por favor, digitar apenas valores positivos!\n"
             "=========================================\n")
             return
+    
     elif deposito_user <= dict_de_usuarios[cpf_user]["movimentações"] and deposito_user <= 500:
         dict_de_usuarios[cpf_user]["movimentações"] -= deposito_user
-    else:
-        print("\nparece que você tentou sacar mais do que 500 reais\n")
+        dict_de_usuarios[cpf_user]["limite saque"] -= 1
+        dict_de_usuarios[cpf_user]["extrato"]["saída"].append(deposito_user)
 
-    # pela peculiaridade de ser por usuário, talvez eu não precise da função extrato
-    # eu posso registrar a movimentação direto na função de saque
-def extrato():
-    pass
+    else:
+        print("==============================================================================\n"
+              "parece que você tentou sacar mais do que 500 reais ou não tem saldo suficiente\n"
+              "==============================================================================\n")
+    
 
 def main():
     while True:
@@ -144,7 +165,6 @@ def main():
                        '(V) - verificar informação do usuário\n'
                        '(D) - depósito\n'
                        '(S) - saque\n'
-                       '(E) - extrato\n'
                        '(Q) - sair: ')).lower()
         if op == 'u':
             cadastrar_usuario()
@@ -156,8 +176,6 @@ def main():
             deposito()
         elif op == 's':
             saque()
-        elif op == 'e':
-            extrato()
         elif op == 'q':
             break
         else: 
@@ -168,5 +186,7 @@ main()
 # a função de cadastro está completa? R: sim!
 # a função de conta corrente está completa? R: sim!
 # a função de verificar dados está completa? R: sim!
-# a função depósito está completa? R: sim, com algumas funcionalidades extras e com os requisitos do github!
-# todos os prints estão completos? R: os principais estão!
+# a função depósito está completa? R: sim!
+# todos os prints estão completos? R: os principais estão, mas falta alguns feedbacks!
+# a função de saque está completa? R: sim!
+# o extrato foi feito? R: sim, o registro está dentro de deposito() e saque()
